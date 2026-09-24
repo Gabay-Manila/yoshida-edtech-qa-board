@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>管理画面 | しつもんひろば</title>
+<style>
+  :root{
+    --warm-bg:#FFF8F0; --warm-card:#fff; --warm-accent:#E8834A; --warm-accent-dark:#C96A34;
+    --warm-text:#3A2E28; --warm-sub:#8A7A70; --warm-border:#F0E0D0;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; font-family:"Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif; background:var(--warm-bg); color:var(--warm-text); padding:16px;}
+  h1{font-size:1.2rem; margin:0 0 16px;}
+  .login-box{max-width:340px; margin:60px auto; text-align:center;}
+  input[type=password], input[type=text], textarea{
+    width:100%; padding:10px; border-radius:10px; border:1px solid var(--warm-border); font-size:0.95rem; font-family:inherit;
+  }
+  textarea{min-height:140px; resize:vertical;}
+  button{
+    padding:10px 16px; border:none; border-radius:10px; background:var(--warm-accent); color:#fff; font-weight:bold; cursor:pointer;
+  }
+  button.secondary{background:#efe3d8; color:var(--warm-text);}
+  button:disabled{background:#ddc9bb;}
+  .card{background:var(--warm-card); border:1px solid var(--warm-border); border-radius:14px; padding:16px; margin-bottom:16px;}
+  .tag-pill{display:inline-block; font-size:0.72rem; background:#eee; padding:3px 10px; border-radius:10px; margin-bottom:6px; color:var(--warm-sub);}
+  .q-title{font-weight:bold; margin:4px 0;}
+  .q-meta{font-size:0.78rem; color:var(--warm-sub); margin-bottom:8px;}
+  .q-body{font-size:0.9rem; margin-bottom:12px; white-space:pre-wrap; background:#faf6f1; padding:10px; border-radius:8px;}
+  label{display:block; font-size:0.8rem; color:var(--warm-sub); margin:8px 0 4px;}
+  .btn-row{display:flex; gap:8px; margin-top:10px;}
+  .empty-state{text-align:center; color:var(--warm-sub); padding:40px 10px;}
+</style>
+</head>
+<body>
+
+<div id="login-box" class="login-box">
+  <h1>🔐 管理画面ログイン</h1>
+  <input type="password" id="admin-pass" placeholder="パスワード">
+  <div style="margin-top:10px;"><button onclick="login()">ログイン</button></div>
+</div>
+
+<div id="admin-body" style="display:none;">
+  <h1>📋 未承認の質問一覧</h1>
+  <div id="pending-list"></div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+  // index.htmlと同じ設定に合わせてください
+  const firebaseConfig = {
+    apiKey: "AIzaSyC9-n2L2z2mw9hVLaEB5dG2e96o90ee1H0",
+    authDomain: "yoshida-edtech-qa.firebaseapp.com",
+    projectId: "yoshida-edtech-qa",
+    storageBucket: "yoshida-edtech-qa.firebasestorage.app",
+    messagingSenderId: "226436070594",
+    appId: "1:226436070594:web:08bf4ab66894bf6dd04f5b"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+
+  const TAG_LABELS = { web:"Web基礎", app:"アプリ開発", error:"エラー解決", exam:"試験内容", visa:"手続き系" };
+
+  function login(){
+    const pass = document.getElementById("admin-pass").value;
+    // 簡易認証：実際にはサーバーレス関数(/api/admin-check)で検証する実装に差し替え推奨
+    fetch("/api/admin-check", {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({ password: pass })
+    }).then(r=>r.json()).then(res=>{
+      if(res.ok){
+        sessionStorage.setItem("admin_ok","1");
+        document.getElementById("login-box").style.display="none";
+        document.getElementById("admin-body").style.display="block";
+        loadPending();
+      } else {
+        alert("パスワードが違います");
+      }
+    }).catch(()=>alert("認証に失敗しました"));
+  }
+
+  if(sessionStorage.getItem("admin_ok")==="1"){
+    document.getElementById("login-box").style.display="none";
+    document.getElementById("admin-body").style.display="block";
+    loadPending();
+  }
+
+  async function loadPending(){
+    const listEl = document.getElementById("pending-list");
+    listEl.innerHTML = "読み込み中…";
+    const snap = await db.collection("questions")
+      .where("status","in",["pending","drafted"])
+      .orderBy("createdAt","desc").get();
+
+    if(snap.empty){
+      listEl.innerHTML = `<div class="empty-state">未承認の質問はありません🌤️</div>`;
+      return;
+    }
+
+    listEl.innerHTML = "";
+    snap.forEach(doc=>{
+      const q = doc.data();
+      const el = document.createElement("div");
+      el.className = "card";
+      el.innerHTML = `
+        <span class="tag-pill">${TAG_LABELS[q.tag] || q.tag}</span>
+        <div class="q-title">${escapeHtml(q.title)}</div>
+        <div class="q-meta">${escapeHtml(q.nickname)} さん・${q.status === "drafted" ? "AI下書きあり" : "下書き未生成"}</div>
+        <div class="q-body">${escapeHtml(q.body)}</div>
+        <label>回答内容（AI下書きを確認・修正してください）</label>
+        <textarea id="draft-${doc.id}">${escapeHtml(q.draftText || "")}</textarea>
+        <div class="btn-row">
+          <button onclick="publish('${doc.id}')">✅ この内容で公開する</button>
+          <button class="secondary" onclick="hold('${doc.id}')">保留のままにする</button>
+        </div>
+      `;
+      listEl.appendChild(el);
+    });
+  }
+
+  async function publish(id){
+    const text = document.getElementById(`draft-${id}`).value.trim();
+    if(!text){ alert("回答内容を入力してください"); return; }
+    await db.collection("questions").doc(id).update({
+      finalText: text,
+      status: "published",
+      approvedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    loadPending();
+  }
+
+  async function hold(id){
+    // 何もステータスを変えず、リストから一旦外すだけ（次回読み込みでまた表示される）
+    const cardEls = document.querySelectorAll(".card");
+    loadPending();
+  }
+
+  function escapeHtml(str){
+    if(!str) return "";
+    return str.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+  }
+</script>
+</body>
+</html>

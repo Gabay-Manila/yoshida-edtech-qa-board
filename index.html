@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>しつもんひろば | Yoshida EdTech</title>
+
+<!-- Google tag (gtag.js) : GabayPilot用GA4プロパティを流用 -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-88604PLCJ3"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-88604PLCJ3');
+</script>
+
+<style>
+  :root{
+    --warm-bg:#FFF8F0;
+    --warm-card:#FFFFFF;
+    --warm-accent:#E8834A;
+    --warm-accent-dark:#C96A34;
+    --warm-text:#3A2E28;
+    --warm-sub:#8A7A70;
+    --warm-border:#F0E0D0;
+    --tag-web:#6FA8DC;
+    --tag-app:#93C47D;
+    --tag-error:#E06666;
+    --tag-exam:#C27BA0;
+    --tag-visa:#F1C232;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; font-family:"Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif;
+    background:var(--warm-bg); color:var(--warm-text); padding-bottom:60px;
+  }
+  header{
+    background:var(--warm-accent); color:#fff; padding:20px 16px 16px;
+    text-align:center; border-radius:0 0 20px 20px;
+  }
+  header h1{margin:0; font-size:1.3rem;}
+  header p{margin:6px 0 0; font-size:0.85rem; opacity:0.95;}
+
+  .tabs{display:flex; margin:16px; gap:8px;}
+  .tab-btn{
+    flex:1; padding:10px; border:none; border-radius:12px; background:var(--warm-card);
+    color:var(--warm-sub); font-weight:bold; font-size:0.95rem; box-shadow:0 1px 4px rgba(0,0,0,0.06);
+  }
+  .tab-btn.active{background:var(--warm-accent); color:#fff;}
+
+  .panel{display:none; padding:0 16px;}
+  .panel.active{display:block;}
+
+  .card{
+    background:var(--warm-card); border-radius:14px; padding:16px; margin-bottom:14px;
+    box-shadow:0 1px 6px rgba(0,0,0,0.06); border:1px solid var(--warm-border);
+  }
+
+  label{display:block; font-size:0.85rem; color:var(--warm-sub); margin:10px 0 4px;}
+  select, input[type=text], textarea{
+    width:100%; padding:10px; border-radius:10px; border:1px solid var(--warm-border);
+    font-size:0.95rem; font-family:inherit; background:#fffdfb;
+  }
+  textarea{min-height:100px; resize:vertical;}
+
+  .btn-main{
+    width:100%; margin-top:16px; padding:13px; border:none; border-radius:12px;
+    background:var(--warm-accent); color:#fff; font-size:1rem; font-weight:bold;
+  }
+  .btn-main:active{background:var(--warm-accent-dark);}
+  .btn-main:disabled{background:#ddc9bb;}
+
+  .nickname-box{text-align:center; padding:30px 16px;}
+  .nickname-box h2{font-size:1.1rem;}
+
+  .filter-row{display:flex; gap:6px; overflow-x:auto; padding:0 16px 10px; margin-top:6px;}
+  .filter-chip{
+    flex:none; padding:6px 12px; border-radius:20px; border:1px solid var(--warm-border);
+    background:#fff; font-size:0.8rem; color:var(--warm-sub); white-space:nowrap;
+  }
+  .filter-chip.active{background:var(--warm-text); color:#fff; border-color:var(--warm-text);}
+
+  .tag-badge{
+    display:inline-block; font-size:0.7rem; color:#fff; padding:3px 8px; border-radius:8px; margin-bottom:6px;
+  }
+  .tag-web{background:var(--tag-web);} .tag-app{background:var(--tag-app);}
+  .tag-error{background:var(--tag-error);} .tag-exam{background:var(--tag-exam);}
+  .tag-visa{background:var(--tag-visa); color:#5c4a00;}
+
+  .q-title{font-weight:bold; margin:4px 0;}
+  .q-meta{font-size:0.75rem; color:var(--warm-sub); margin-bottom:8px;}
+  .q-body{font-size:0.9rem; margin-bottom:10px; white-space:pre-wrap;}
+  .answer-box{
+    background:#FFF3E6; border-left:4px solid var(--warm-accent); border-radius:8px;
+    padding:10px 12px; font-size:0.88rem; white-space:pre-wrap;
+  }
+  .answer-label{font-size:0.75rem; color:var(--warm-accent-dark); font-weight:bold; margin-bottom:4px;}
+  .waiting-badge{
+    display:inline-block; font-size:0.78rem; color:var(--warm-accent-dark);
+    background:#FFEEDD; padding:6px 10px; border-radius:8px;
+  }
+  .empty-state{text-align:center; color:var(--warm-sub); padding:40px 10px; font-size:0.9rem;}
+  .toast{
+    position:fixed; bottom:20px; left:50%; transform:translateX(-50%);
+    background:var(--warm-text); color:#fff; padding:10px 18px; border-radius:20px; font-size:0.85rem;
+    opacity:0; transition:opacity 0.3s; pointer-events:none;
+  }
+  .toast.show{opacity:1;}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🌤️ しつもんひろば</h1>
+  <p>ひとりで悩まなくて大丈夫。ここで質問してくださいね。</p>
+</header>
+
+<div id="nickname-gate" class="nickname-box" style="display:none;">
+  <h2>はじめまして！</h2>
+  <p style="color:var(--warm-sub); font-size:0.9rem;">呼んでほしい名前（ニックネーム）を教えてください。<br>次からは自動で覚えています。</p>
+  <div class="card">
+    <input type="text" id="nickname-input" placeholder="例：マリア、太郎 など" maxlength="20">
+    <button class="btn-main" onclick="saveNickname()">はじめる</button>
+  </div>
+</div>
+
+<div id="main-app" style="display:none;">
+  <div class="tabs">
+    <button class="tab-btn active" id="tab-board-btn" onclick="switchTab('board')">📋 ひろば</button>
+    <button class="tab-btn" id="tab-post-btn" onclick="switchTab('post')">✍️ 質問する</button>
+  </div>
+
+  <!-- 掲示板一覧 -->
+  <div class="panel active" id="panel-board">
+    <div class="filter-row" id="filter-row"></div>
+    <div id="board-list"></div>
+  </div>
+
+  <!-- 投稿フォーム -->
+  <div class="panel" id="panel-post">
+    <div class="card">
+      <label>どんな質問ですか？（タグを選んでください）</label>
+      <select id="post-tag">
+        <option value="web">Web基礎（サイトの使い方・ログイン）</option>
+        <option value="app">アプリ開発（アプリの機能・不具合）</option>
+        <option value="error">エラー解決（エラーメッセージ）</option>
+        <option value="exam">試験内容（介護福祉士・SSW試験）</option>
+        <option value="visa">手続き系（MWO・COE・在留資格）</option>
+      </select>
+
+      <label>質問のタイトル</label>
+      <input type="text" id="post-title" placeholder="短くまとめてください" maxlength="60">
+
+      <label>くわしい内容</label>
+      <textarea id="post-body" placeholder="困っていることを、わかる範囲で書いてください。&#10;（画面のスクリーンショットの説明などもOKです）"></textarea>
+
+      <button class="btn-main" id="submit-btn" onclick="submitQuestion()">この内容で質問する</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- Firebase SDK (compat, no build step) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+  // ▼▼▼ ここをFirebaseプロジェクトの設定に置き換えてください ▼▼▼
+  const firebaseConfig = {
+    apiKey: "AIzaSyC9-n2L2z2mw9hVLaEB5dG2e96o90ee1H0",
+    authDomain: "yoshida-edtech-qa.firebaseapp.com",
+    projectId: "yoshida-edtech-qa",
+    storageBucket: "yoshida-edtech-qa.firebasestorage.app",
+    messagingSenderId: "226436070594",
+    appId: "1:226436070594:web:08bf4ab66894bf6dd04f5b"
+  };
+  // ▲▲▲ ここまで ▲▲▲
+
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+
+  const TAG_LABELS = {
+    web:   {label:"Web基礎",   cls:"tag-web"},
+    app:   {label:"アプリ開発", cls:"tag-app"},
+    error: {label:"エラー解決", cls:"tag-error"},
+    exam:  {label:"試験内容",   cls:"tag-exam"},
+    visa:  {label:"手続き系",   cls:"tag-visa"}
+  };
+
+  let currentFilter = "all";
+  let nickname = localStorage.getItem("qaboard_nickname");
+
+  function init(){
+    if(nickname){
+      document.getElementById("main-app").style.display = "block";
+      buildFilterRow();
+      loadBoard();
+    } else {
+      document.getElementById("nickname-gate").style.display = "block";
+    }
+  }
+
+  function saveNickname(){
+    const val = document.getElementById("nickname-input").value.trim();
+    if(!val){ showToast("ニックネームを入力してくださいね"); return; }
+    localStorage.setItem("qaboard_nickname", val);
+    nickname = val;
+    document.getElementById("nickname-gate").style.display = "none";
+    document.getElementById("main-app").style.display = "block";
+    buildFilterRow();
+    loadBoard();
+  }
+
+  function switchTab(tab){
+    document.getElementById("panel-board").classList.toggle("active", tab==="board");
+    document.getElementById("panel-post").classList.toggle("active", tab==="post");
+    document.getElementById("tab-board-btn").classList.toggle("active", tab==="board");
+    document.getElementById("tab-post-btn").classList.toggle("active", tab==="post");
+    if(tab==="board") loadBoard();
+  }
+
+  function buildFilterRow(){
+    const row = document.getElementById("filter-row");
+    const chips = [["all","すべて"], ...Object.entries(TAG_LABELS).map(([k,v])=>[k,v.label])];
+    row.innerHTML = chips.map(([key,label])=>
+      `<button class="filter-chip ${key===currentFilter?'active':''}" onclick="setFilter('${key}')">${label}</button>`
+    ).join("");
+  }
+
+  function setFilter(key){
+    currentFilter = key;
+    buildFilterRow();
+    loadBoard();
+  }
+
+  async function loadBoard(){
+    const listEl = document.getElementById("board-list");
+    listEl.innerHTML = `<div class="empty-state">読み込み中です…</div>`;
+
+    try{
+      let query = db.collection("questions").orderBy("createdAt","desc").limit(50);
+      const snap = await query.get();
+      let items = snap.docs.map(d => ({id:d.id, ...d.data()}));
+
+      if(currentFilter !== "all"){
+        items = items.filter(q => q.tag === currentFilter);
+      }
+
+      // 公開済み or 自分の投稿(承認待ち含む)だけ表示
+      items = items.filter(q => q.status === "published" || q.nickname === nickname);
+
+      if(items.length === 0){
+        listEl.innerHTML = `<div class="empty-state">まだ質問がありません。<br>いちばん最初の質問者になってみませんか？🌱</div>`;
+        return;
+      }
+
+      listEl.innerHTML = items.map(renderQuestionCard).join("");
+    }catch(e){
+      console.error(e);
+      listEl.innerHTML = `<div class="empty-state">読み込みに失敗しました。時間をおいて試してください。</div>`;
+    }
+  }
+
+  function renderQuestionCard(q){
+    const tagInfo = TAG_LABELS[q.tag] || {label:q.tag, cls:""};
+    const dateStr = q.createdAt && q.createdAt.toDate ? q.createdAt.toDate().toLocaleDateString("ja-JP") : "";
+    const isMine = q.nickname === nickname;
+
+    let answerHtml;
+    if(q.status === "published" && q.finalText){
+      answerHtml = `<div class="answer-box"><div class="answer-label">💬 回答</div>${escapeHtml(q.finalText)}</div>`;
+    } else if(isMine){
+      answerHtml = `<span class="waiting-badge">🕊️ 回答準備中です。もう少しお待ちくださいね</span>`;
+    } else {
+      answerHtml = "";
+    }
+
+    return `
+      <div class="card">
+        <span class="tag-badge ${tagInfo.cls}">${tagInfo.label}</span>
+        <div class="q-title">${escapeHtml(q.title)}</div>
+        <div class="q-meta">${escapeHtml(q.nickname)} さん・${dateStr}${isMine ? "（あなたの質問）" : ""}</div>
+        <div class="q-body">${escapeHtml(q.body)}</div>
+        ${answerHtml}
+      </div>`;
+  }
+
+  function escapeHtml(str){
+    if(!str) return "";
+    return str.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+  }
+
+  async function submitQuestion(){
+    const tag = document.getElementById("post-tag").value;
+    const title = document.getElementById("post-title").value.trim();
+    const body = document.getElementById("post-body").value.trim();
+    const btn = document.getElementById("submit-btn");
+
+    if(!title || !body){
+      showToast("タイトルと内容を入力してくださいね");
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = "送信しています…";
+
+    try{
+      const docRef = await db.collection("questions").add({
+        nickname, tag, title, body,
+        status: "pending",           // pending -> drafted -> published
+        draftText: "", finalText: "",
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+
+      // AI下書き生成＋メール通知はサーバーレス関数に委任
+      fetch("/api/generate-draft", {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({ id: docRef.id, tag, title, body, nickname })
+      }).catch(err => console.warn("通知/下書き生成でエラー(投稿自体は成功):", err));
+
+      document.getElementById("post-title").value = "";
+      document.getElementById("post-body").value = "";
+      showToast("質問を受け付けました🌱 確認でき次第、回答します");
+      if(typeof gtag === "function"){ gtag('event', 'qa_question_submitted', { tag }); }
+      switchTab("board");
+    }catch(e){
+      console.error(e);
+      showToast("送信に失敗しました。もう一度試してください");
+    }finally{
+      btn.disabled = false;
+      btn.textContent = "この内容で質問する";
+    }
+  }
+
+  function showToast(msg){
+    const t = document.getElementById("toast");
+    t.textContent = msg;
+    t.classList.add("show");
+    setTimeout(()=>t.classList.remove("show"), 2600);
+  }
+
+  init();
+</script>
+</body>
+</html>
