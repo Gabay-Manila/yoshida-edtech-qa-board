@@ -54,7 +54,7 @@ module.exports = async (req, res) => {
     let draftText = "";
     try {
       const aiRes = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${process.env.GEMINI_API_KEY}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -75,6 +75,9 @@ module.exports = async (req, res) => {
         }
       );
       const aiData = await aiRes.json();
+      if (!aiRes.ok) {
+        console.error("Gemini API error response:", JSON.stringify(aiData));
+      }
       draftText =
         aiData?.candidates?.[0]?.content?.parts?.[0]?.text ||
         "（下書き生成に失敗しました。手動で回答を作成してください）";
